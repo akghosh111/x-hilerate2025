@@ -7,6 +7,7 @@ import AdminLogin from "./pages/AdminLogin"
 import AdminDashboard from "./pages/AdminDashboard"
 import TicketVerification from "./pages/TicketVerification"
 import Layout from "./components/Layout"
+import Sponsors from "./components/Sponsors"
 
 function App() {
   return (
@@ -16,14 +17,19 @@ function App() {
           
             <Routes>
               <Route path="/" element={<Home />} />
+              
+              
               <Route path="/purchase" element={<TicketPurchase />} />
               <Route path="/admin" element={<AdminLogin />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/verify" element={<TicketVerification />} />
             </Routes>
-          
+
+            
+            <Sponsors></Sponsors>
         </motion.div>
       </Router>
+      
     </main>
   )
 }
