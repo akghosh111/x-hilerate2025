@@ -7,6 +7,8 @@ const { z } = require('zod');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const redis = require('redis');
+const { promisify } = require('util');
 
 dotenv.config({ path: './.env' });
 
@@ -14,6 +16,26 @@ const app = express();
 app.use(express.json());
 
 app.use(cors());
+
+const redisClient = redis.createClient({
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT,
+    password: process.env.REDIS_PASSWORD
+});
+
+const setAsync = promisify(redisClient.set).bind(redisClient);
+const getAsync = promisify(redisClient.get).bind(redisClient);
+const delAsync = promisify(redisClient.del).bind(redisClient);
+
+async function blacklistToken(token, expiresIn = 3600) {
+    await setAsync(`bl_${token}`, 'true', 'EX', expiresIn);
+}
+
+// Check if token is blacklisted
+async function isTokenBlacklisted(token) {
+    const result = await getAsync(`bl_${token}`);
+    return result === 'true';
+}
 
 // Mongoose Schemas
 const TicketSchema = new mongoose.Schema({
@@ -54,6 +76,11 @@ async function authenticateAdmin(req, res, next) {
     }
 
     try {
+        // Check if token is blacklisted
+        if (await isTokenBlacklisted(token)) {
+            return res.status(401).json({ error: 'Token is no longer valid' });
+        }
+
         const decoded = jwt.verify(token, JWT_SECRET);
         const admin = await Admin.findOne({ username: decoded.username });
         
@@ -67,6 +94,8 @@ async function authenticateAdmin(req, res, next) {
         res.status(401).json({ error: 'Invalid or expired token' });
     }
 }
+
+
 
 app.post('/admin/login', async (req, res) => {
     try {
@@ -94,6 +123,23 @@ app.post('/admin/login', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: "Internal Server Error" });
     }
+});
+
+app.post('/admin/logout', authenticateAdmin, async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    try {
+        // Blacklist token for 1 hour
+        await blacklistToken(token);
+        res.json({ message: 'Logged out successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Logout failed' });
+    }
+});
+
+// Redis Connection Error Handling
+redisClient.on('error', (err) => {
+    console.error('Redis Error:', err);
 });
 
 app.post('/tickets', async (req, res) => {
@@ -139,7 +185,7 @@ app.post('/tickets/:id/verify', authenticateAdmin, async (req, res) => {
 });
 
 app.get('/tickets/:id/download', async (req, res) => {
-    const ticket = tickets.get(req.params.id);
+    const ticket = await Ticket.findOne({ id: req.params.id });
 
     if (!ticket) {
         return res.status(404).json({ error: 'Ticket not found' });
