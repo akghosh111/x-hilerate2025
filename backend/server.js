@@ -6,11 +6,14 @@ const crypto = require('crypto');
 const { z } = require('zod');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const cors = require('cors');
 
 dotenv.config({ path: './.env' });
 
 const app = express();
 app.use(express.json());
+
+app.use(cors());
 
 // Mongoose Schemas
 const TicketSchema = new mongoose.Schema({
