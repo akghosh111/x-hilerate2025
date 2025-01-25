@@ -10,19 +10,21 @@ import Layout from "./components/Layout"
 
 function App() {
   return (
-    <Router>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/purchase" element={<TicketPurchase />} />
-            <Route path="/admin" element={<AdminLogin />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/verify" element={<TicketVerification />} />
-          </Routes>
-        </Layout>
-      </motion.div>
-    </Router>
+    <main className="font-light text-white antialiased selection:bg-teal-300 selection:text-black" >
+      <Router>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
+          
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/purchase" element={<TicketPurchase />} />
+              <Route path="/admin" element={<AdminLogin />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/verify" element={<TicketVerification />} />
+            </Routes>
+          
+        </motion.div>
+      </Router>
+    </main>
   )
 }
 
