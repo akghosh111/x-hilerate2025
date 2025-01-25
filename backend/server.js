@@ -5,33 +5,45 @@ const qr = require('qrcode');
 const crypto = require('crypto');
 const { z } = require('zod');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 
 dotenv.config({ path: './.env' });
 
 const app = express();
-
 app.use(express.json());
 
-const JWT_SECRET = process.env.JWT_SECRET;
-//console.log(JWT_SECRET)
-const tickets = new Map();
-const admins = new Map();
-
-function registerAdmin(username, password) {
-    const salt = crypto.randomBytes(16).toString('hex');
-    const hashedPassword = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
-    admins.set(username, { salt, hashedPassword });
-}
-
-// Register an admin (do this once during setup)
-registerAdmin('admin', 'adminpassword');
-
-const loginSchema = z.object({
-    username: z.string().nonempty("Username is required"),
-    password: z.string().nonempty("Password is required")
+// Mongoose Schemas
+const TicketSchema = new mongoose.Schema({
+    id: { type: String, unique: true },
+    name: { type: String, required: true },
+    email: { type: String, required: true },
+    ticketType: { type: String, required: true },
+    purchaseDate: { type: Date, default: Date.now },
+    used: { type: Boolean, default: false }
 });
 
-function authenticateAdmin(req, res, next) {
+const AdminSchema = new mongoose.Schema({
+    username: { type: String, unique: true, required: true },
+    salt: { type: String, required: true },
+    hashedPassword: { type: String, required: true }
+});
+
+const Ticket = mongoose.model('Ticket', TicketSchema);
+const Admin = mongoose.model('Admin', AdminSchema);
+
+
+mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+});
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+
+
+
+
+async function authenticateAdmin(req, res, next) {
     const token = req.headers.authorization?.split(' ')[1];
     
     if (!token) {
@@ -40,6 +52,12 @@ function authenticateAdmin(req, res, next) {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
+        const admin = await Admin.findOne({ username: decoded.username });
+        
+        if (!admin) {
+            return res.status(401).json({ error: 'Invalid token' });
+        }
+        
         req.admin = decoded;
         next();
     } catch (error) {
@@ -47,16 +65,22 @@ function authenticateAdmin(req, res, next) {
     }
 }
 
-app.post('/admin/login', (req, res) => {
+app.post('/admin/login', async (req, res) => {
     try {
-        const { username, password } = loginSchema.parse(req.body);
-        const admin = admins.get(username);
+        const { username, password } = req.body;
+        const admin = await Admin.findOne({ username });
 
         if (!admin) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        const hashedPassword = crypto.pbkdf2Sync(password, admin.salt, 1000, 64, 'sha512').toString('hex');
+        const hashedPassword = crypto.pbkdf2Sync(
+            password, 
+            admin.salt, 
+            1000, 
+            64, 
+            'sha512'
+        ).toString('hex');
         
         if (hashedPassword !== admin.hashedPassword) {
             return res.status(401).json({ error: 'Invalid credentials' });
@@ -65,43 +89,48 @@ app.post('/admin/login', (req, res) => {
         const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '1h' });
         res.json({ token });
     } catch (error) {
-        if (error instanceof z.ZodError) {
-            return res.status(400).json({ errors: error.errors });
-        }
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
-const ticketSchema = z.object({
-    name: z.string().nonempty("Name is required"),
-    email: z.string().email("Invalid email format"),
-    ticketType: z.string().nonempty("Ticket type is required"),
-});
-
-function generateTicketId() {
-    return crypto.randomBytes(8).toString('hex');
-}
-
 app.post('/tickets', async (req, res) => {
     try {
-        const { name, email, ticketType } = ticketSchema.parse(req.body);
+        const { name, email, ticketType } = req.body;
+        const ticketId = crypto.randomBytes(8).toString('hex');
 
-        const ticketId = generateTicketId();
-        const ticket = {
+        const ticket = new Ticket({
             id: ticketId,
             name,
             email,
-            ticketType,
-            purchaseDate: new Date(),
-            used: false,
-        };
+            ticketType
+        });
 
-        tickets.set(ticketId, ticket);
-        res.json({ ticketId, downloadUrl: `/tickets/${ticketId}/download` });
+        await ticket.save();
+        res.json({ 
+            ticketId, 
+            downloadUrl: `/tickets/${ticketId}/download` 
+        });
     } catch (error) {
-        if (error instanceof z.ZodError) {
-            return res.status(400).json({ errors: error.errors });
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+app.post('/tickets/:id/verify', authenticateAdmin, async (req, res) => {
+    try {
+        const ticket = await Ticket.findOne({ id: req.params.id });
+
+        if (!ticket) {
+            return res.status(404).json({ error: 'Ticket not found' });
         }
+
+        if (ticket.used) {
+            return res.status(400).json({ error: 'Ticket already used' });
+        }
+
+        ticket.used = true;
+        await ticket.save();
+        res.json({ status: 'valid', ticket });
+    } catch (error) {
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
@@ -119,47 +148,70 @@ app.get('/tickets/:id/download', async (req, res) => {
         ticketType: ticket.ticketType,
     }));
 
-    const doc = new PDFDocument();
+    const doc = new PDFDocument({
+        layout: 'portrait',
+        size: 'A4',
+        margins: {
+            top: 50,
+            bottom: 50,
+            left: 50,
+            right: 50
+        }
+    });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=ticket-${ticket.id}.pdf`);
 
     doc.pipe(res);
 
-    doc.fontSize(25).text('X-hilerate 2k25', { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(15).text(`Ticket ID: ${ticket.id}`);
-    doc.text(`Name: ${ticket.name}`);
-    doc.text(`Ticket Type: ${ticket.ticketType}`);
-    doc.text(`Purchase Date: ${ticket.purchaseDate.toLocaleDateString()}`);
+    // Background color
+    doc.rect(0, 0, doc.page.width, doc.page.height).fill('#F0F4F8');
 
-    doc.image(qrCode, {
-        fit: [250, 250],
-        align: 'center',
+    // Header
+    doc.fillColor('#1A365D')
+       .font('Helvetica-Bold')
+       .fontSize(30)
+       .text('X-hilerate 2k25', { align: 'center' });
+
+    // Decorative line
+    doc.strokeColor('#4299E1')
+       .lineWidth(2)
+       .moveTo(50, 100)
+       .lineTo(doc.page.width - 50, 100)
+       .stroke();
+
+    // Ticket Details
+    doc.fillColor('#2D3748')
+       .font('Helvetica')
+       .fontSize(16)
+       .moveDown(2)
+       .text(`Ticket ID: ${ticket.id}`, { align: 'center' })
+       .text(`Name: ${ticket.name}`, { align: 'center' })
+       .text(`Ticket Type: ${ticket.ticketType}`, { align: 'center' })
+       .text(`Purchase Date: ${ticket.purchaseDate.toLocaleDateString()}`, { align: 'center' });
+
+    // QR Code
+    const qrCodeImg = Buffer.from(qrCode.split(',')[1], 'base64');
+    doc.image(qrCodeImg, doc.page.width / 2 - 100, doc.page.height / 2 - 100, {
+        width: 200,
+        height: 200,
+        align: 'center'
     });
+
+    // Footer
+    doc.fontSize(10)
+       .fillColor('#718096')
+       .text('This ticket is non-transferable', doc.page.width / 2 - 100, doc.page.height - 100, {
+           width: 200,
+           align: 'center'
+       });
 
     doc.end();
 });
 
 
-app.post('/tickets/:id/verify', authenticateAdmin, (req, res) => {
-    const ticket = tickets.get(req.params.id);
-
-    if (!ticket) {
-        return res.status(404).json({ error: 'Ticket not found' });
-    }
-
-    if (ticket.used) {
-        return res.status(400).json({ error: 'Ticket already used' });
-    }
-
-    ticket.used = true;
-    res.json({ status: 'valid', ticket });
-});
-
-// Admin-only routes for additional management
-app.get('/admin/tickets', authenticateAdmin, (req, res) => {
-    res.json(Array.from(tickets.values()));
-});
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, async () => {
+    
+    console.log(`Server running on port ${PORT}`);
+});
