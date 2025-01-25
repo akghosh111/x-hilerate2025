@@ -209,6 +209,24 @@ app.get('/tickets/:id/download', async (req, res) => {
 });
 
 
+app.get('/admin/ticket-stats', authenticateAdmin, async (req, res) => {
+    try {
+        const totalTickets = await Ticket.countDocuments();
+        const usedTickets = await Ticket.countDocuments({ used: true });
+        const unusedTickets = await Ticket.countDocuments({ used: false });
+        
+
+        res.json({
+            totalTickets,
+            usedTickets,
+            unusedTickets,
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to retrieve ticket stats" });
+    }
+});
+
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
