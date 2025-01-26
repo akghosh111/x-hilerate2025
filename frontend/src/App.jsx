@@ -8,10 +8,15 @@ import AdminDashboard from "./pages/AdminDashboard"
 import TicketVerification from "./pages/TicketVerification"
 import Layout from "./components/Layout"
 import Sponsors from "./components/Sponsors"
+import Location from "./components/Location"
+import Glimpse from "./components/Glimpse"
+
+
 
 function App() {
   return (
     <main className="font-light text-white antialiased selection:bg-teal-300 selection:text-black" >
+      
       <Router>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
           
@@ -26,9 +31,15 @@ function App() {
             </Routes>
 
             
-            <Sponsors></Sponsors>
+            
         </motion.div>
       </Router>
+      
+      <Location></Location>
+      <Glimpse></Glimpse>
+      <Sponsors></Sponsors>
+      
+      
       
     </main>
   )
