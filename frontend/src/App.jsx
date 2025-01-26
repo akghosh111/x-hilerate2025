@@ -10,6 +10,7 @@ import Layout from "./components/Layout"
 import Sponsors from "./components/Sponsors"
 import Location from "./components/Location"
 import Glimpse from "./components/Glimpse"
+import Contact from "./components/Contact"
 
 
 
@@ -38,6 +39,7 @@ function App() {
       <Location></Location>
       <Glimpse></Glimpse>
       <Sponsors></Sponsors>
+      <Contact></Contact>
       
       
       
