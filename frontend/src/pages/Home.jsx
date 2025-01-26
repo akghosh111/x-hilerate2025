@@ -3,6 +3,11 @@ import { motion } from "framer-motion"
 import { Link } from "react-router-dom"
 import eventpromo from "../assets/poster.png"
 import Sponsors from "../components/Sponsors"
+import Location from "../components/Location"
+import Glimpse from "../components/Glimpse"
+import Contact from "../components/Contact"
+import AdminLogin from "./AdminLogin"
+
 
 function Home() {
   return (
@@ -34,6 +39,10 @@ function Home() {
             Grab your tickets
         </Link>
         </motion.div>
+        <Location></Location>
+        <Glimpse></Glimpse>
+        <Sponsors></Sponsors>
+        <Contact></Contact>
         
         
     </>

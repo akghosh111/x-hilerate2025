@@ -36,10 +36,10 @@ function App() {
         </motion.div>
       </Router>
       
-      <Location></Location>
+      {/* <Location></Location>
       <Glimpse></Glimpse>
       <Sponsors></Sponsors>
-      <Contact></Contact>
+      <Contact></Contact> */}
       
       
       

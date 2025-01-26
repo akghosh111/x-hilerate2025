@@ -11,7 +11,7 @@ function AdminDashboard() {
     const fetchStats = async () => {
       try {
         const token = localStorage.getItem("adminToken")
-        const response = await axios.get("/admin/ticket-stats", {
+        const response = await axios.get("/api/admin/ticket-stats", {
           headers: { Authorization: `Bearer ${token}` },
         })
         setStats(response.data)
@@ -28,20 +28,20 @@ function AdminDashboard() {
 
   return (
     <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-      <h2 className="text-2xl font-bold mb-4">Admin Dashboard</h2>
+      <h2 className="text-2xl font-bold mb-4 mt-4 ml-4">Admin Dashboard</h2>
       {stats ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-4 rounded shadow">
-            <h3 className="text-xl font-bold mb-2">Total Tickets</h3>
-            <p className="text-3xl">{stats.totalTickets}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
+          <div className="bg-purple-600 p-4 rounded shadow">
+            <h3 className="text-white text-xl font-bold mb-2">Total Tickets</h3>
+            <p className="text-white text-3xl">{stats.totalTickets}</p>
           </div>
-          <div className="bg-white p-4 rounded shadow">
-            <h3 className="text-xl font-bold mb-2">Used Tickets</h3>
-            <p className="text-3xl">{stats.usedTickets}</p>
+          <div className="bg-purple-600 p-4 rounded shadow">
+            <h3 className="text-white text-xl font-bold mb-2">Used Tickets</h3>
+            <p className="text-white text-3xl">{stats.usedTickets}</p>
           </div>
-          <div className="bg-white p-4 rounded shadow">
-            <h3 className="text-xl font-bold mb-2">Unused Tickets</h3>
-            <p className="text-3xl">{stats.unusedTickets}</p>
+          <div className="bg-purple-600 p-4 rounded shadow">
+            <h3 className="text-white text-xl font-bold mb-2">Unused Tickets</h3>
+            <p className="text-white text-3xl">{stats.unusedTickets}</p>
           </div>
         </div>
       ) : (
@@ -49,7 +49,7 @@ function AdminDashboard() {
       )}
       <button
         onClick={() => navigate("/admin/verify")}
-        className="mt-8 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300"
+        className="mt-8 ml-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition duration-300"
       >
         Verify Tickets
       </button>

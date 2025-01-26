@@ -14,7 +14,7 @@ function AdminLogin() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const response = await axios.post("/admin/login", credentials)
+      const response = await axios.post("/api/admin/login", credentials)
       localStorage.setItem("adminToken", response.data.token)
       navigate("/admin/dashboard")
     } catch (error) {
@@ -24,7 +24,7 @@ function AdminLogin() {
 
   return (
     <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-      <h2 className="text-2xl font-bold mb-4">Admin Login</h2>
+      <h2 className="text-2xl font-bold mb-4 text-center mt-4">Admin Login</h2>
       <form onSubmit={handleSubmit} className="max-w-md mx-auto">
         <div className="mb-4">
           <label htmlFor="username" className="block mb-2">
@@ -56,7 +56,7 @@ function AdminLogin() {
         </div>
         <button
           type="submit"
-          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300"
+          className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition duration-300"
         >
           Login
         </button>

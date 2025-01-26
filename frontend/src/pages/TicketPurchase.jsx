@@ -17,7 +17,7 @@ function TicketPurchase() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const response = await axios.post("/tickets", formData)
+      const response = await axios.post("/api/tickets", formData)
       setTicketInfo(response.data)
     } catch (error) {
       console.error("Error purchasing ticket:", error)
@@ -26,7 +26,7 @@ function TicketPurchase() {
 
   return (
     <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-      <h2 className="text-2xl font-bold mb-4">Purchase Ticket</h2>
+      <h2 className="text-2xl font-bold mb-4 mt-8 text-center">Purchase Ticket</h2>
       <form onSubmit={handleSubmit} className="max-w-md mx-auto">
         <div className="mb-4">
           <label htmlFor="name" className="block mb-2">
@@ -67,13 +67,13 @@ function TicketPurchase() {
             onChange={handleChange}
             className="w-full p-2 border rounded"
           >
-            <option value="standard">Standard</option>
-            <option value="vip">VIP</option>
+            <option value="standard" className="bg-slate-900">Standard</option>
+            <option value="vip" className="bg-slate-900">VIP</option>
           </select>
         </div>
         <button
           type="submit"
-          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300"
+          className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition duration-300"
         >
           Purchase Ticket
         </button>
@@ -83,14 +83,14 @@ function TicketPurchase() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="mt-8 p-4 bg-green-100 border border-green-400 rounded"
+          className="mt-8 p-4 bg-slate-600 border border-green-400 rounded"
         >
           <h3 className="text-xl font-bold mb-2">Ticket Purchased Successfully!</h3>
           <p>Ticket ID: {ticketInfo.ticketId}</p>
           <p>
             <a
               href={ticketInfo.downloadUrl}
-              className="text-blue-500 hover:underline"
+              className="text-teal-300 hover:underline"
               target="_blank"
               rel="noopener noreferrer"
             >
